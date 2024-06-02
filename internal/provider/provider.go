@@ -50,7 +50,10 @@ func dataSourceDecrypt() *schema.Resource {
 }
 
 func dataSourceDecryptRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	privateKey := d.Get("private_key").(string)
+	var privateKey string
+	if v, ok := d.GetOk("private_key"); ok {
+		privateKey = v.(string)
+	}
 	privateKeyEnv := d.Get("private_key_env").(string)
 
 	if privateKey == "" && privateKeyEnv != "" {
@@ -75,9 +78,12 @@ func dataSourceDecryptRead(ctx context.Context, d *schema.ResourceData, m interf
 		return diag.Errorf("No private key provided")
 	}
 
-	filePath := d.Get("file_path").(string)
+	filePath, ok := d.GetOk("file_path")
+	if !ok {
+		return diag.Errorf("file_path is required")
+	}
 
-	decryptedValues, err := decryptFile(privateKey, filePath)
+	decryptedValues, err := decryptFile(privateKey, filePath.(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -86,7 +92,15 @@ func dataSourceDecryptRead(ctx context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 
-	d.SetId(filePath)
+	d.SetId(filePath.(string))
 
 	return nil
+}
+
+// Mocked decryptFile function for demonstration purposes
+func decryptFile(privateKey, filePath string) (map[string]interface{}, error) {
+	// Implement your decryption logic here
+	return map[string]interface{}{
+		"example_key": "example_value",
+	}, nil
 }
